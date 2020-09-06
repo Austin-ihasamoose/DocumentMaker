@@ -1,36 +1,18 @@
-'''
-0: Line 1: Shop Log for TEMPLATE to TEMPLATE
-    - Style: ARIAL 14, BOLD, UNDERLINE, ITALIC
-2: DATE (PERSON)
-    - Style: ARIAL 12, UNDERLINE
-3: PERSON:
-    - Style: ARIAL 12
-8: DATE (PERSON)
-9: PERSON:
-14: DATE (PERSON)
-15: PERSON:
-20: DATE (PERSON)
-21: PERSON:
-26: DATE (PERSON)
-27: PERSON:
-'''
-
-from pprint import pprint
-from isoweek import Week
 import os
+from pprint import pprint
 import datetime
+import isoweek
 import calendar
 import docx
 from docx.enum.text import WD_LINE_SPACING
 from docx.shared import Pt, Inches
 
-ERRORS = []
-
 
 #                 START DOCUMENT STYLE RELATED FUNCTIONS                  #
 
 
-def add_styled_par(document, text, bold=False, underline=False, italic=False, font_name='Arial', font_size=12, spacing = WD_LINE_SPACING.SINGLE):
+def add_styled_par(document, text, bold=False, underline=False, italic=False, font_name='Arial', font_size=12,
+                   spacing=WD_LINE_SPACING.SINGLE):
     # Add style options
     par = document.add_paragraph()  # Add new paragraph
     run = par.add_run(text)  # Run style settings
@@ -76,12 +58,12 @@ def shorthand_months():
 
 
 def generate_folders(year):
-    '''
+    """
     Generates folders for each year in "output/"
     Folder structure wanted:
     YEAR \\ MONTH \\
     :param year: Root year wanted
-    '''
+    """
 
     printed = False
     year_path = 'output\\' + str(year)
@@ -94,8 +76,8 @@ def generate_folders(year):
 
     sh_list = shorthand_months()
 
-    for i in range(1,13):
-        month_path = 'output\\' + str(year) + '\\' + str(i) + ' - ' + str(sh_list[i-1])
+    for i in range(1, 13):
+        month_path = 'output\\' + str(year) + '\\' + str(i) + ' - ' + str(sh_list[i - 1])
         try:
             os.mkdir(month_path)
         except OSError as e:
@@ -157,11 +139,10 @@ def generate_document(year, iso_week, output_path):
     friday = datetime.date.fromisocalendar(year, iso_week, 5)
     output_name = format_date(monday)[0:6] + ' to ' + format_date(friday)[0:6] + '.docx'
 
-    if os.path.isfile(output_path+output_name):
+    if os.path.isfile(output_path + output_name):
         return print("[ERROR]: Already created: " + output_name + ", aborting")
 
     doc = docx.Document()
-    sh_list = shorthand_months()
 
     add_styled_par(doc, "Shop Log for " + format_date(monday) + " to " + format_date(friday), bold=True, underline=True,
                    italic=True, font_size=14, spacing=WD_LINE_SPACING.ONE_POINT_FIVE)
@@ -173,7 +154,7 @@ def generate_document(year, iso_week, output_path):
         add_bullet_par(doc, amount=3)
         doc.add_paragraph()
 
-    doc.save(output_path+output_name)
+    doc.save(output_path + output_name)
 
     return print('Generated: ' + output_name)
 
@@ -181,8 +162,6 @@ def generate_document(year, iso_week, output_path):
 def generate_documents(year):
     sh_list = shorthand_months()
     results = generate_dates(year)
-    c = calendar.Calendar()
-    document_dates = {}
     first = True
     path = 'output\\' + str(year) + '\\'
 
@@ -193,26 +172,15 @@ def generate_documents(year):
             first = False
 
         for key in results.keys():
-            if results[key][0] == i+1:
-                path = 'output\\' + str(year) + '\\' + str(i+1) + ' - '+ sh_list[i] + '\\'
+            if results[key][0] == i + 1 and key <= isoweek.Week.last_week_of_year(year).week:
+                path = 'output\\' + str(year) + '\\' + str(i + 1) + ' - ' + sh_list[i] + '\\'
                 generate_document(year, key, path)
-
-    for year_months in c.yeardatescalendar(year, width=1):
-        for months in year_months:
-            for week in months:
-                month = week[0].month
-                week_num = week[0].isocalendar()[1]
-                start_day = week[0].day
-                end_day = week[4].day
-                document_dates[week_num] = [month, [start_day, end_day]]
-
-    return document_dates
 
 
 #                 END GENERATION RELATED FUNCTIONS                   #
 
 
 if __name__ == '__main__':
-    year_to_generate = 2020
+    year_to_generate = 2021
     generate_folders(year_to_generate)
-    generate_documents(2020)
+    generate_documents(year_to_generate)
